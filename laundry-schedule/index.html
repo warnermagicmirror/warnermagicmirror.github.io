@@ -293,21 +293,40 @@ function drawLaundry() {
     var onLaundry = "";
     var until = "";
 
-    if (hour >= 5 && hour < 10) {
-        onLaundry = day[0];
-        until = "10:00 AM";
-    } else if (hour >= 10 && hour < 14) {
-        onLaundry = day[1];
-        until = "2:00 PM";
-    } else if (hour >= 14 && hour < 18) {
-        onLaundry = day[2];
-        until = "6:00 PM";
-    } else if (hour >= 18 && hour < 22) {
-        onLaundry = day[3];
-        until = "10:00 PM";
-    } else {
+    var slots = [
+        { start: 5, end: 10, label: "10:00 AM" },
+        { start: 10, end: 14, label: "2:00 PM" },
+        { start: 14, end: 18, label: "6:00 PM" },
+        { start: 18, end: 22, label: "10:00 PM" }
+    ];
+
+    var index = -1;
+
+    for (var i = 0; i < slots.length; i++) {
+        if (hour >= slots[i].start && hour < slots[i].end) {
+            index = i;
+            break;
+        }
+    }
+
+    if (index === -1) {
         onLaundry = _;
         until = "5:00 AM";
+    } else {
+        onLaundry = day[index];
+
+        // 🔥 FIX: extend forward across same person
+        var endIndex = index;
+
+        for (var j = index + 1; j < day.length; j++) {
+            if (day[j] === onLaundry) {
+                endIndex = j;
+            } else {
+                break;
+            }
+        }
+
+        until = slots[endIndex].label;
     }
 
     document.getElementById("onlaundry").textContent =
@@ -410,10 +429,19 @@ function checkTimers() {
             document.getElementById("doneOverlay").style.display = "flex";
 
             audio.onended = function() {
+                // 🔥 IF USER DIDN'T DISMISS → SNOOZE
                 if (completedId !== null) {
-                    removeTimer(completedId);
+                    for (var j = 0; j < timers.length; j++) {
+                        if (timers[j].id === completedId) {
+                            timers[j].completed = false;
+                            timers[j].end = Date.now() + 2 * 60000; // 2 min snooze
+                            break;
+                        }
+                    }
+
                     completedId = null;
                     document.getElementById("doneOverlay").style.display = "none";
+                    renderTimers();
                 }
             };
 
@@ -428,12 +456,12 @@ document.getElementById("addTimerBtn").onclick = function() {
     var input = document.getElementById("minutesInput");
     var minutes = Number(input.value);
 
-    if (minutes >= 1) {
+    if (minutes > 0) {
         addTimer(minutes);
         input.value = "";
         input.focus();
     } else {
-        alert("Enter at least 1 minute.");
+        alert("Please enter a valid time!");
     }
 };
 
