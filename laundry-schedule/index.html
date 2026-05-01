@@ -219,7 +219,7 @@ button:hover {
 /* ------------------ SOUNDS ------------------ */
 var sounds = [
     { name: "Default", file: "timer-completed.mp3" },
-    { name: "Consequences", file: "consequences.mp3" }, 
+    { name: "Consequences", file: "consequences.mp3" }
 ];
 
 var selectedSound = sounds[0];
@@ -315,10 +315,11 @@ function drawLaundry() {
     lastPerson = person;
 }
 
-/* ------------------ TIMERS (FIXED) ------------------ */
+/* ------------------ TIMERS ------------------ */
 var timers = [];
 var nextId = 1;
-var activeTimerId = null;
+var deleteId = null;
+var completedId = null;
 
 function saveTimers() {
     localStorage.setItem("timers", JSON.stringify(timers));
@@ -328,6 +329,13 @@ function loadTimers() {
     var saved = localStorage.getItem("timers");
     if (saved) {
         timers = JSON.parse(saved);
+
+        // restore sound references
+        timers.forEach(t => {
+            var found = sounds.find(s => s.file === t.sound.file);
+            if (found) t.sound = found;
+        });
+
         nextId = timers.length ? Math.max(...timers.map(t=>t.id))+1 : 1;
     }
 }
@@ -359,35 +367,42 @@ function format(ms){
 function renderTimers(){
     var box=document.getElementById("timers");
     box.innerHTML="";
-    if(!timers.length){ box.innerHTML="No timers."; return;}
+
+    if(!timers.length){
+        box.innerHTML='<div class="empty">No active timers.</div>';
+        return;
+    }
 
     timers.forEach(t=>{
-        var d=document.createElement("div");
-        d.className="timer-item";
+        var item=document.createElement("div");
+        item.className="timer-item";
 
         var del=document.createElement("button");
         del.className="delete-btn";
         del.textContent="✕";
-        del.onclick=()=>removeTimer(t.id);
+        del.onclick=function(){
+            deleteId = t.id;
+            document.getElementById("deleteOverlay").style.display="flex";
+        };
 
         var main=document.createElement("div");
         main.className="timer-main";
 
         var name=document.createElement("div");
         name.className="timer-name";
-        name.textContent = t.minutes+" min ("+t.sound.name+")";
+        name.textContent = t.minutes+" Minute Timer ("+t.sound.name+")";
 
         var time=document.createElement("div");
         time.className="timer-left";
         var left=t.end-Date.now();
-        time.textContent=left>0?format(left):"Finishing...";
+        time.textContent = left>0 ? "Time Left: "+format(left) : "Finishing...";
 
         main.appendChild(name);
         main.appendChild(time);
 
-        d.appendChild(del);
-        d.appendChild(main);
-        box.appendChild(d);
+        item.appendChild(del);
+        item.appendChild(main);
+        box.appendChild(item);
     });
 }
 
@@ -397,7 +412,7 @@ function checkTimers(){
 
         if (!t.completed && Date.now() >= t.end) {
             t.completed = true;
-            activeTimerId = t.id;
+            completedId = t.id;
 
             var audio=document.getElementById("alarmSound");
             audio.src=t.sound.file;
@@ -405,17 +420,17 @@ function checkTimers(){
             audio.play();
 
             document.getElementById("doneText").textContent =
-                t.minutes+" minute timer done!";
+                t.minutes+" minute timer has completed.";
             document.getElementById("doneOverlay").style.display="flex";
 
             audio.onended = function () {
-                var timer = timers.find(x => x.id === activeTimerId);
-
-                if (timer && timer.completed) {
-                    timer.completed = false;
-                    timer.end = Date.now() + 2 * 60000; // snooze
-                    activeTimerId = null;
-
+                if (completedId !== null) {
+                    var timer = timers.find(x => x.id === completedId);
+                    if (timer) {
+                        timer.completed = false;
+                        timer.end = Date.now() + 2 * 60000; // snooze
+                    }
+                    completedId = null;
                     saveTimers();
                     renderTimers();
                 }
@@ -431,7 +446,23 @@ function checkTimers(){
 /* ------------------ EVENTS ------------------ */
 document.getElementById("addTimerBtn").onclick=function(){
     var v=Number(document.getElementById("minutesInput").value);
-    if(v>0){ addTimer(v); }
+    if(v>0){
+        addTimer(v);
+        document.getElementById("minutesInput").value="";
+    }
+};
+
+document.getElementById("cancelDelete").onclick=function(){
+    deleteId=null;
+    document.getElementById("deleteOverlay").style.display="none";
+};
+
+document.getElementById("confirmDelete").onclick=function(){
+    if(deleteId!==null){
+        removeTimer(deleteId);
+    }
+    deleteId=null;
+    document.getElementById("deleteOverlay").style.display="none";
 };
 
 document.getElementById("dismissDone").onclick=function(){
@@ -440,9 +471,9 @@ document.getElementById("dismissDone").onclick=function(){
     audio.currentTime=0;
     audio.onended=null;
 
-    if (activeTimerId !== null) {
-        removeTimer(activeTimerId);
-        activeTimerId = null;
+    if (completedId !== null) {
+        removeTimer(completedId);
+        completedId = null;
     }
 
     document.getElementById("doneOverlay").style.display="none";
