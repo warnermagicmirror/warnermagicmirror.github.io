@@ -337,8 +337,21 @@ function render(){
 
         var time=document.createElement("div");
         time.className="timer-left";
-        var left=t.end-Date.now();
-        time.textContent=left>0?Math.ceil(left/1000)+"s":"Finishing...";
+        var left = t.end - Date.now();
+
+if (left > 0) {
+    var totalSeconds = Math.ceil(left / 1000);
+    var minutes = Math.floor(totalSeconds / 60);
+    var seconds = totalSeconds % 60;
+
+    var display = "";
+    if (minutes > 0) display += minutes + "m ";
+    display += seconds + "s";
+
+    time.textContent = display;
+} else {
+    time.textContent = "Finishing...";
+}
 
         main.appendChild(name); main.appendChild(time);
         d.appendChild(del); d.appendChild(main);
