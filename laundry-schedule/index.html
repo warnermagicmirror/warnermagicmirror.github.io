@@ -368,7 +368,9 @@ function check(){
             var a=document.getElementById("alarmSound");
             a.src=t.sound.file;
             a.currentTime=0;
-            a.play();
+            a.play().catch(err => {
+    console.log("Audio play blocked:", err);
+});
 
             document.getElementById("doneText").textContent=t.minutes+" minute timer done!";
             document.getElementById("doneOverlay").style.display="flex";
@@ -414,7 +416,13 @@ document.getElementById("dismissDone").onclick=()=>{
 
     document.getElementById("doneOverlay").style.display="none";
 };
-
+document.body.addEventListener("click", () => {
+    var a = document.getElementById("alarmSound");
+    a.play().then(() => {
+        a.pause();
+        a.currentTime = 0;
+    }).catch(()=>{});
+}, { once: true });
 /* ---------- INIT ---------- */
 load();
 render();
