@@ -7,9 +7,7 @@
 <title>Laundry Schedule</title>
 
 <style>
-* {
-    box-sizing: border-box;
-}
+* { box-sizing: border-box; }
 
 body {
     margin: 0;
@@ -19,10 +17,7 @@ body {
     padding: 30px 15px;
 }
 
-.container {
-    max-width: 850px;
-    margin: auto;
-}
+.container { max-width: 850px; margin: auto; }
 
 .card {
     background: white;
@@ -86,18 +81,10 @@ button {
     transition: 0.18s;
 }
 
-button:hover {
-    transform: translateY(-1px);
-}
+button:hover { transform: translateY(-1px); }
 
-.primary-btn {
-    background: #2563eb;
-    color: white;
-}
-
-.primary-btn:hover {
-    background: #1d4ed8;
-}
+.primary-btn { background: #2563eb; color: white; }
+.primary-btn:hover { background: #1d4ed8; }
 
 .dismiss-btn {
     background: #10b981;
@@ -105,10 +92,7 @@ button:hover {
     margin-top: 12px;
 }
 
-.section-title {
-    font-size: 22px;
-    margin: 0 0 14px 0;
-}
+.section-title { font-size: 22px; margin-bottom: 14px; }
 
 #timers {
     display: flex;
@@ -130,25 +114,20 @@ button:hover {
     width: 34px;
     height: 34px;
     border-radius: 50%;
-    padding: 0;
-    font-size: 18px;
-    font-weight: bold;
     background: #ef4444;
     color: white;
+    font-size: 18px;
 }
 
-.timer-main {
-    flex: 1;
-}
+.timer-main { flex: 1; }
+.timer-name { font-weight: bold; font-size: 17px; }
+.timer-left { color: #6b7280; font-size: 14px; }
 
-.timer-name {
-    font-weight: bold;
-    font-size: 17px;
-}
-
-.timer-left {
-    color: #6b7280;
-    font-size: 14px;
+.empty {
+    text-align: center;
+    padding: 14px;
+    border: 2px dashed #d1d5db;
+    border-radius: 14px;
 }
 
 .overlay {
@@ -166,7 +145,6 @@ button:hover {
     max-width: 420px;
     border-radius: 18px;
     padding: 24px;
-    box-shadow: 0 20px 40px rgba(0,0,0,0.2);
 }
 </style>
 </head>
@@ -206,287 +184,227 @@ button:hover {
 </div>
 </div>
 
+<!-- Delete -->
+<div class="overlay" id="deleteOverlay">
+<div class="modal">
+<h2>Delete Timer?</h2>
+<button id="cancelDelete">Cancel</button>
+<button id="confirmDelete">Delete</button>
+</div>
+</div>
+
 <!-- Done -->
 <div class="overlay" id="doneOverlay">
 <div class="modal">
-<h2><span class="material-symbols-outlined>alarm</span> Timer Complete</h2>
+<h2>Timer Complete</h2>
 <div id="doneText"></div>
 <button class="dismiss-btn" id="dismissDone">Dismiss</button>
 </div>
 </div>
 
 <script>
-/* ------------------ SOUNDS ------------------ */
+/* ---------- SOUNDS ---------- */
 var sounds = [
     { name: "Default", file: "timer-completed.mp3" },
     { name: "Consequences", file: "consequences.mp3" }
 ];
-
 var selectedSound = sounds[0];
 
-function loadSounds() {
-    var select = document.getElementById("soundSelect");
+var select = document.getElementById("soundSelect");
+sounds.forEach((s,i)=>{
+    var opt=document.createElement("option");
+    opt.value=i;
+    opt.textContent=s.name;
+    select.appendChild(opt);
+});
 
-    sounds.forEach((s, i) => {
-        var opt = document.createElement("option");
-        opt.value = i;
-        opt.textContent = s.name;
-        select.appendChild(opt);
-    });
-
-    select.onchange = function () {
-        selectedSound = sounds[this.value];
-        previewSound(selectedSound);
-    };
-}
-
-function previewSound(sound) {
-    var audio = document.getElementById("previewAudio");
-    audio.src = sound.file;
-    audio.currentTime = 0;
-    audio.play();
-
-    document.getElementById("previewOverlay").style.display = "flex";
-    document.getElementById("previewName").textContent = sound.name;
-
-    audio.onended = closePreview;
-}
-
-function closePreview() {
-    var audio = document.getElementById("previewAudio");
-    audio.pause();
-    audio.currentTime = 0;
-    document.getElementById("previewOverlay").style.display = "none";
-}
-
-document.getElementById("stopPreview").onclick = closePreview;
-
-/* ------------------ LAUNDRY (UNCHANGED) ------------------ */
-var f="Father", mo="Mother", s="Shalyn", l="Lamoni", ja="Jason", je="Jedediah", ma="Marianne", _="****";
-
-var schedule = {
-    mon:[mo,mo,mo,je+" & "+ma],
-    tue:[s,ma,ma,ja],
-    wed:[s,je,je,l],
-    thu:[s,mo,mo,ja],
-    fri:[s,je,ma,l],
-    sat:[ja,ja,l,l],
-    sun:[_,_,_,_]
+select.onchange=function(){
+    selectedSound = sounds[this.value];
+    previewSound(selectedSound);
 };
 
-var lastPerson = null;
+function previewSound(sound){
+    var a=document.getElementById("previewAudio");
+    a.src=sound.file;
+    a.currentTime=0;
+    a.play();
 
-function drawLaundry() {
-    var date = new Date();
-    var string = date.toString().toLowerCase();
-    var day = schedule[string.slice(0,3)];
-    var hour = date.getHours();
+    document.getElementById("previewOverlay").style.display="flex";
+    document.getElementById("previewName").textContent=sound.name;
 
-    var slots = [
-        {start:5,end:10,label:"10:00 AM"},
-        {start:10,end:14,label:"2:00 PM"},
-        {start:14,end:18,label:"6:00 PM"},
-        {start:18,end:22,label:"10:00 PM"}
-    ];
+    a.onended=closePreview;
+}
 
-    var index=-1;
+function closePreview(){
+    var a=document.getElementById("previewAudio");
+    a.pause(); a.currentTime=0;
+    document.getElementById("previewOverlay").style.display="none";
+}
+
+document.getElementById("stopPreview").onclick=closePreview;
+
+/* ---------- LAUNDRY ---------- */
+var f="Father", mo="Mother", s="Shalyn", l="Lamoni", ja="Jason", je="Jedediah", ma="Marianne", _="****";
+
+var schedule={
+mon:[mo,mo,mo,je+" & "+ma],
+tue:[s,ma,ma,ja],
+wed:[s,je,je,l],
+thu:[s,mo,mo,ja],
+fri:[s,je,ma,l],
+sat:[ja,ja,l,l],
+sun:[_,_,_,_]
+};
+
+var lastPerson=null;
+
+function drawLaundry(){
+    var d=new Date();
+    var day=schedule[d.toString().toLowerCase().slice(0,3)];
+    var h=d.getHours();
+
+    var slots=[5,10,14,18];
+    var idx=-1;
     for(var i=0;i<slots.length;i++){
-        if(hour>=slots[i].start && hour<slots[i].end){
-            index=i; break;
-        }
+        if(h>=slots[i] && h<(slots[i+1]||24)){ idx=i; break;}
     }
 
-    var person = index===-1?_:day[index];
-    var until = index===-1?"5:00 AM":slots[index].label;
+    var person = idx===-1?_:day[idx];
 
-    document.getElementById("onlaundry").textContent =
-        person+" is currently on laundry until "+until+".";
+    document.getElementById("onlaundry").textContent=
+        person+" is currently on laundry.";
 
-    if (lastPerson !== null &&
-        person !== lastPerson &&
-        person !== _ &&
-        lastPerson !== _) {
-
-        var sound = document.getElementById("turnSound");
-        sound.currentTime = 0;
-        sound.play();
+    if(lastPerson && person!==lastPerson && person!==_ && lastPerson!==_){
+        var snd=document.getElementById("turnSound");
+        snd.currentTime=0;
+        snd.play();
     }
-
-    lastPerson = person;
+    lastPerson=person;
 }
 
-/* ------------------ TIMERS ------------------ */
-var timers = [];
-var nextId = 1;
-var deleteId = null;
-var completedId = null;
+/* ---------- TIMERS ---------- */
+var timers=[];
+var nextId=1;
+var deleteId=null;
+var completedId=null;
 
-function saveTimers() {
-    localStorage.setItem("timers", JSON.stringify(timers));
-}
+function save(){ localStorage.setItem("timers",JSON.stringify(timers)); }
 
-function loadTimers() {
-    var saved = localStorage.getItem("timers");
-    if (saved) {
-        timers = JSON.parse(saved);
-
-        // restore sound references
-        timers.forEach(t => {
-            var found = sounds.find(s => s.file === t.sound.file);
-            if (found) t.sound = found;
-        });
-
-        nextId = timers.length ? Math.max(...timers.map(t=>t.id))+1 : 1;
+function load(){
+    var s=localStorage.getItem("timers");
+    if(s){
+        timers=JSON.parse(s);
+        nextId=Math.max(0,...timers.map(t=>t.id))+1;
     }
 }
 
-function addTimer(min) {
+function addTimer(m){
     timers.push({
-        id: nextId++,
-        minutes: min,
-        end: Date.now()+min*60000,
-        completed: false,
-        sound: selectedSound
+        id:nextId++,
+        minutes:m,
+        end:Date.now()+m*60000,
+        completed:false,
+        sound:selectedSound
     });
-    saveTimers();
-    renderTimers();
+    save(); render();
 }
 
-function removeTimer(id) {
-    timers = timers.filter(t=>t.id!==id);
-    saveTimers();
-    renderTimers();
+function removeTimer(id){
+    timers=timers.filter(t=>t.id!==id);
+    save(); render();
 }
 
-function format(ms){
-    var t=Math.ceil(ms/1000);
-    var m=Math.floor(t/60), s=t%60;
-    return m+"m "+(s<10?"0":"")+s+"s";
-}
-
-function renderTimers(){
+function render(){
     var box=document.getElementById("timers");
     box.innerHTML="";
-
-    if(!timers.length){
-        box.innerHTML='<div class="empty">No active timers.</div>';
-        return;
-    }
+    if(!timers.length){ box.innerHTML='<div class="empty">No active timers.</div>'; return;}
 
     timers.forEach(t=>{
-        var item=document.createElement("div");
-        item.className="timer-item";
+        var d=document.createElement("div"); d.className="timer-item";
 
         var del=document.createElement("button");
-        del.className="delete-btn";
-        del.textContent="✕";
-        del.onclick=function(){
-            deleteId = t.id;
-            document.getElementById("deleteOverlay").style.display="flex";
-        };
+        del.className="delete-btn"; del.textContent="✕";
+        del.onclick=()=>{ deleteId=t.id; document.getElementById("deleteOverlay").style.display="flex"; };
 
-        var main=document.createElement("div");
-        main.className="timer-main";
+        var main=document.createElement("div"); main.className="timer-main";
 
         var name=document.createElement("div");
         name.className="timer-name";
-        name.textContent = t.minutes+" Minute Timer ("+t.sound.name+")";
+        name.textContent=t.minutes+" min ("+t.sound.name+")";
 
         var time=document.createElement("div");
         time.className="timer-left";
         var left=t.end-Date.now();
-        time.textContent = left>0 ? "Time Left: "+format(left) : "Finishing...";
+        time.textContent=left>0?Math.ceil(left/1000)+"s":"Finishing...";
 
-        main.appendChild(name);
-        main.appendChild(time);
-
-        item.appendChild(del);
-        item.appendChild(main);
-        box.appendChild(item);
+        main.appendChild(name); main.appendChild(time);
+        d.appendChild(del); d.appendChild(main);
+        box.appendChild(d);
     });
 }
 
-function checkTimers(){
-    for (var i=0;i<timers.length;i++){
-        var t = timers[i];
+function check(){
+    timers.forEach(t=>{
+        if(!t.completed && Date.now()>=t.end){
+            t.completed=true;
+            completedId=t.id;
 
-        if (!t.completed && Date.now() >= t.end) {
-            t.completed = true;
-            completedId = t.id;
+            var a=document.getElementById("alarmSound");
+            a.src=t.sound.file;
+            a.currentTime=0;
+            a.play();
 
-            var audio=document.getElementById("alarmSound");
-            audio.src=t.sound.file;
-            audio.currentTime=0;
-            audio.play();
-
-            document.getElementById("doneText").textContent =
-                t.minutes+" minute timer has completed.";
+            document.getElementById("doneText").textContent=t.minutes+" minute timer done!";
             document.getElementById("doneOverlay").style.display="flex";
 
-            audio.onended = function () {
-                if (completedId !== null) {
-                    var timer = timers.find(x => x.id === completedId);
-                    if (timer) {
-                        timer.completed = false;
-                        timer.end = Date.now() + 2 * 60000; // snooze
+            a.onended=function(){
+                if(completedId){
+                    var tm=timers.find(x=>x.id===completedId);
+                    if(tm){
+                        tm.completed=false;
+                        tm.end=Date.now()+120000;
                     }
-                    completedId = null;
-                    saveTimers();
-                    renderTimers();
+                    completedId=null;
+                    save(); render();
                 }
             };
-
-            break;
         }
-    }
-
-    renderTimers();
+    });
+    render();
 }
 
-/* ------------------ EVENTS ------------------ */
-document.getElementById("addTimerBtn").onclick=function(){
+/* ---------- EVENTS ---------- */
+document.getElementById("addTimerBtn").onclick=()=>{
     var v=Number(document.getElementById("minutesInput").value);
-    if(v>0){
-        addTimer(v);
-        document.getElementById("minutesInput").value="";
-    }
+    if(v>0){ addTimer(v); }
 };
 
-document.getElementById("cancelDelete").onclick=function(){
+document.getElementById("cancelDelete").onclick=()=>{
     deleteId=null;
     document.getElementById("deleteOverlay").style.display="none";
 };
 
-document.getElementById("confirmDelete").onclick=function(){
-    if(deleteId!==null){
-        removeTimer(deleteId);
-    }
+document.getElementById("confirmDelete").onclick=()=>{
+    if(deleteId!==null){ removeTimer(deleteId); }
     deleteId=null;
     document.getElementById("deleteOverlay").style.display="none";
 };
 
-document.getElementById("dismissDone").onclick=function(){
-    var audio=document.getElementById("alarmSound");
-    audio.pause();
-    audio.currentTime=0;
-    audio.onended=null;
+document.getElementById("dismissDone").onclick=()=>{
+    var a=document.getElementById("alarmSound");
+    a.pause(); a.currentTime=0; a.onended=null;
 
-    if (completedId !== null) {
-        removeTimer(completedId);
-        completedId = null;
-    }
+    if(completedId){ removeTimer(completedId); completedId=null; }
 
     document.getElementById("doneOverlay").style.display="none";
 };
 
-/* ------------------ INIT ------------------ */
-loadSounds();
-loadTimers();
-renderTimers();
+/* ---------- INIT ---------- */
+load();
+render();
 drawLaundry();
-
 setInterval(drawLaundry,10000);
-setInterval(checkTimers,500);
+setInterval(check,500);
 </script>
 
 </body>
