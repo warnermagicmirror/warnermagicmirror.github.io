@@ -209,7 +209,7 @@ button:hover {
 <!-- Done -->
 <div class="overlay" id="doneOverlay">
 <div class="modal">
-<h2>Timer Complete</h2>
+<h2><span class="material-symbols-outlined>alarm</span> Timer Complete</h2>
 <div id="doneText"></div>
 <button class="dismiss-btn" id="dismissDone">Dismiss</button>
 </div>
@@ -260,7 +260,7 @@ function closePreview() {
 
 document.getElementById("stopPreview").onclick = closePreview;
 
-/* ------------------ LAUNDRY ------------------ */
+/* ------------------ LAUNDRY (UNCHANGED) ------------------ */
 var f="Father", mo="Mother", s="Shalyn", l="Lamoni", ja="Jason", je="Jedediah", ma="Marianne", _="****";
 
 var schedule = {
@@ -301,7 +301,6 @@ function drawLaundry() {
     document.getElementById("onlaundry").textContent =
         person+" is currently on laundry until "+until+".";
 
-    // 🔔 PLAY SOUND ON CHANGE
     if (lastPerson !== null &&
         person !== lastPerson &&
         person !== _ &&
@@ -315,9 +314,10 @@ function drawLaundry() {
     lastPerson = person;
 }
 
-/* ------------------ TIMERS ------------------ */
+/* ------------------ TIMERS (FIXED) ------------------ */
 var timers = [];
 var nextId = 1;
+var activeTimerId = null;
 
 function saveTimers() {
     localStorage.setItem("timers", JSON.stringify(timers));
@@ -336,6 +336,7 @@ function addTimer(min) {
         id: nextId++,
         minutes: min,
         end: Date.now()+min*60000,
+        completed: false,
         sound: selectedSound
     });
     saveTimers();
@@ -390,34 +391,59 @@ function renderTimers(){
 }
 
 function checkTimers(){
-    timers.forEach(t=>{
-        if(Date.now()>=t.end){
+    for (var i=0;i<timers.length;i++){
+        var t = timers[i];
+
+        if (!t.completed && Date.now() >= t.end) {
+            t.completed = true;
+            activeTimerId = t.id;
+
             var audio=document.getElementById("alarmSound");
             audio.src=t.sound.file;
-            audio.loop = true;
+            audio.currentTime=0;
             audio.play();
 
             document.getElementById("doneText").textContent =
                 t.minutes+" minute timer done!";
             document.getElementById("doneOverlay").style.display="flex";
 
-            removeTimer(t.id);
+            audio.onended = function () {
+                var timer = timers.find(x => x.id === activeTimerId);
+
+                if (timer && timer.completed) {
+                    timer.completed = false;
+                    timer.end = Date.now() + 2 * 60000; // snooze
+                    activeTimerId = null;
+
+                    saveTimers();
+                    renderTimers();
+                }
+            };
+
+            break;
         }
-    });
+    }
+
     renderTimers();
 }
 
 /* ------------------ EVENTS ------------------ */
 document.getElementById("addTimerBtn").onclick=function(){
     var v=Number(document.getElementById("minutesInput").value);
-    if(v>0){ addTimer(v); this.blur(); }
+    if(v>0){ addTimer(v); }
 };
 
 document.getElementById("dismissDone").onclick=function(){
     var audio=document.getElementById("alarmSound");
     audio.pause();
     audio.currentTime=0;
-    audio.loop = false;
+    audio.onended=null;
+
+    if (activeTimerId !== null) {
+        removeTimer(activeTimerId);
+        activeTimerId = null;
+    }
+
     document.getElementById("doneOverlay").style.display="none";
 };
 
