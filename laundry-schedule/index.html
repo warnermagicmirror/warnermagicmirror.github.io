@@ -1,12 +1,15 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined" />
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Laundry Schedule</title>
 
 <style>
-* { box-sizing: border-box; }
+* {
+    box-sizing: border-box;
+}
 
 body {
     margin: 0;
@@ -16,7 +19,10 @@ body {
     padding: 30px 15px;
 }
 
-.container { max-width: 850px; margin: auto; }
+.container {
+    max-width: 850px;
+    margin: auto;
+}
 
 .card {
     background: white;
@@ -26,7 +32,27 @@ body {
     margin-bottom: 20px;
 }
 
-h1 { text-align: center; }
+h1 {
+    margin: 0 0 18px 0;
+    font-size: 32px;
+    text-align: center;
+}
+
+.sub {
+    color: #6b7280;
+    text-align: center;
+    margin-bottom: 22px;
+}
+
+#onlaundry {
+    font-size: 24px;
+    font-weight: bold;
+    background: #f3f7ff;
+    border: 1px solid #dbe8ff;
+    border-radius: 14px;
+    padding: 18px;
+    text-align: center;
+}
 
 .controls {
     display: flex;
@@ -35,22 +61,60 @@ h1 { text-align: center; }
     margin-top: 18px;
 }
 
-input, select {
-    padding: 14px;
-    border-radius: 12px;
+input[type="number"], select {
+    flex: 1;
+    min-width: 180px;
     border: 1px solid #d1d5db;
+    border-radius: 12px;
+    padding: 14px;
     font-size: 16px;
+    outline: none;
+}
+
+input:focus, select:focus {
+    border-color: #3b82f6;
+    box-shadow: 0 0 0 4px rgba(59,130,246,0.12);
 }
 
 button {
     border: none;
     border-radius: 12px;
-    padding: 14px;
+    padding: 14px 18px;
+    font-size: 16px;
     font-weight: bold;
     cursor: pointer;
+    transition: 0.18s;
 }
 
-.primary-btn { background: #2563eb; color: white; }
+button:hover {
+    transform: translateY(-1px);
+}
+
+.primary-btn {
+    background: #2563eb;
+    color: white;
+}
+
+.primary-btn:hover {
+    background: #1d4ed8;
+}
+
+.dismiss-btn {
+    background: #10b981;
+    color: white;
+    margin-top: 12px;
+}
+
+.section-title {
+    font-size: 22px;
+    margin: 0 0 14px 0;
+}
+
+#timers {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
 
 .timer-item {
     display: flex;
@@ -66,9 +130,25 @@ button {
     width: 34px;
     height: 34px;
     border-radius: 50%;
+    padding: 0;
+    font-size: 18px;
+    font-weight: bold;
     background: #ef4444;
     color: white;
-    font-size: 18px;
+}
+
+.timer-main {
+    flex: 1;
+}
+
+.timer-name {
+    font-weight: bold;
+    font-size: 17px;
+}
+
+.timer-left {
+    color: #6b7280;
+    font-size: 14px;
 }
 
 .overlay {
@@ -82,9 +162,11 @@ button {
 
 .modal {
     background: white;
-    padding: 24px;
+    width: 100%;
+    max-width: 420px;
     border-radius: 18px;
-    text-align: center;
+    padding: 24px;
+    box-shadow: 0 20px 40px rgba(0,0,0,0.2);
 }
 </style>
 </head>
@@ -94,6 +176,7 @@ button {
 
 <div class="card">
 <h1>Laundry Schedule</h1>
+<div class="sub">Current laundry turn + personal timers</div>
 <div id="onlaundry"></div>
 
 <div class="controls">
@@ -104,7 +187,7 @@ button {
 </div>
 
 <div class="card">
-<h2>Current Timers</h2>
+<div class="section-title">Current Timers</div>
 <div id="timers"></div>
 </div>
 
@@ -112,24 +195,23 @@ button {
 
 <audio id="alarmSound"></audio>
 <audio id="previewAudio"></audio>
+<audio id="turnSound" src="notification.mp3"></audio>
 
-<!-- Preview Modal -->
+<!-- Preview -->
 <div class="overlay" id="previewOverlay">
 <div class="modal">
 <h2>Preview Sound</h2>
 <div id="previewName"></div>
-<br>
 <button id="stopPreview">Stop</button>
 </div>
 </div>
 
-<!-- Done Modal -->
+<!-- Done -->
 <div class="overlay" id="doneOverlay">
 <div class="modal">
 <h2>Timer Complete</h2>
 <div id="doneText"></div>
-<br>
-<button id="dismissDone">Dismiss</button>
+<button class="dismiss-btn" id="dismissDone">Dismiss</button>
 </div>
 </div>
 
@@ -163,8 +245,8 @@ function previewSound(sound) {
     audio.currentTime = 0;
     audio.play();
 
-    document.getElementById("previewName").textContent = sound.name;
     document.getElementById("previewOverlay").style.display = "flex";
+    document.getElementById("previewName").textContent = sound.name;
 
     audio.onended = closePreview;
 }
@@ -178,6 +260,61 @@ function closePreview() {
 
 document.getElementById("stopPreview").onclick = closePreview;
 
+/* ------------------ LAUNDRY ------------------ */
+var f="Father", mo="Mother", s="Shalyn", l="Lamoni", ja="Jason", je="Jedediah", ma="Marianne", _="****";
+
+var schedule = {
+    mon:[mo,mo,mo,je+" & "+ma],
+    tue:[s,ma,ma,ja],
+    wed:[s,je,je,l],
+    thu:[s,mo,mo,ja],
+    fri:[s,je,ma,l],
+    sat:[ja,ja,l,l],
+    sun:[_,_,_,_]
+};
+
+var lastPerson = null;
+
+function drawLaundry() {
+    var date = new Date();
+    var string = date.toString().toLowerCase();
+    var day = schedule[string.slice(0,3)];
+    var hour = date.getHours();
+
+    var slots = [
+        {start:5,end:10,label:"10:00 AM"},
+        {start:10,end:14,label:"2:00 PM"},
+        {start:14,end:18,label:"6:00 PM"},
+        {start:18,end:22,label:"10:00 PM"}
+    ];
+
+    var index=-1;
+    for(var i=0;i<slots.length;i++){
+        if(hour>=slots[i].start && hour<slots[i].end){
+            index=i; break;
+        }
+    }
+
+    var person = index===-1?_:day[index];
+    var until = index===-1?"5:00 AM":slots[index].label;
+
+    document.getElementById("onlaundry").textContent =
+        person+" is currently on laundry until "+until+".";
+
+    // 🔔 PLAY SOUND ON CHANGE
+    if (lastPerson !== null &&
+        person !== lastPerson &&
+        person !== _ &&
+        lastPerson !== _) {
+
+        var sound = document.getElementById("turnSound");
+        sound.currentTime = 0;
+        sound.play();
+    }
+
+    lastPerson = person;
+}
+
 /* ------------------ TIMERS ------------------ */
 var timers = [];
 var nextId = 1;
@@ -190,114 +327,108 @@ function loadTimers() {
     var saved = localStorage.getItem("timers");
     if (saved) {
         timers = JSON.parse(saved);
-
-        timers.forEach(t => {
-            var found = sounds.find(s => s.file === t.sound.file);
-            if (found) t.sound = found;
-        });
-
-        nextId = timers.length ? Math.max(...timers.map(t => t.id)) + 1 : 1;
+        nextId = timers.length ? Math.max(...timers.map(t=>t.id))+1 : 1;
     }
 }
 
-function addTimer(minutes) {
+function addTimer(min) {
     timers.push({
         id: nextId++,
-        minutes: minutes,
-        end: Date.now() + minutes * 60000,
-        completed: false,
+        minutes: min,
+        end: Date.now()+min*60000,
         sound: selectedSound
     });
-
     saveTimers();
     renderTimers();
 }
 
 function removeTimer(id) {
-    timers = timers.filter(t => t.id !== id);
+    timers = timers.filter(t=>t.id!==id);
     saveTimers();
     renderTimers();
 }
 
-function formatTime(ms) {
-    var total = Math.ceil(ms / 1000);
-    var m = Math.floor(total / 60);
-    var s = total % 60;
-    return m + "m " + (s < 10 ? "0" : "") + s + "s";
+function format(ms){
+    var t=Math.ceil(ms/1000);
+    var m=Math.floor(t/60), s=t%60;
+    return m+"m "+(s<10?"0":"")+s+"s";
 }
 
-function renderTimers() {
-    var box = document.getElementById("timers");
-    box.innerHTML = "";
+function renderTimers(){
+    var box=document.getElementById("timers");
+    box.innerHTML="";
+    if(!timers.length){ box.innerHTML="No timers."; return;}
 
-    if (!timers.length) {
-        box.innerHTML = "No timers.";
-        return;
-    }
+    timers.forEach(t=>{
+        var d=document.createElement("div");
+        d.className="timer-item";
 
-    timers.forEach(t => {
-        var div = document.createElement("div");
-        div.className = "timer-item";
+        var del=document.createElement("button");
+        del.className="delete-btn";
+        del.textContent="✕";
+        del.onclick=()=>removeTimer(t.id);
 
-        var del = document.createElement("button");
-        del.className = "delete-btn";
-        del.textContent = "✕";
-        del.onclick = () => removeTimer(t.id);
+        var main=document.createElement("div");
+        main.className="timer-main";
 
-        var text = document.createElement("div");
-        var left = t.end - Date.now();
+        var name=document.createElement("div");
+        name.className="timer-name";
+        name.textContent = t.minutes+" min ("+t.sound.name+")";
 
-        text.innerHTML =
-            "<b>" + t.minutes + " min (" + t.sound.name + ")</b><br>" +
-            (left > 0 ? formatTime(left) : "Finishing...");
+        var time=document.createElement("div");
+        time.className="timer-left";
+        var left=t.end-Date.now();
+        time.textContent=left>0?format(left):"Finishing...";
 
-        div.appendChild(del);
-        div.appendChild(text);
-        box.appendChild(div);
+        main.appendChild(name);
+        main.appendChild(time);
+
+        d.appendChild(del);
+        d.appendChild(main);
+        box.appendChild(d);
     });
 }
 
-function checkTimers() {
-    timers.forEach(t => {
-        if (!t.completed && Date.now() >= t.end) {
-            t.completed = true;
-
-            var audio = document.getElementById("alarmSound");
-            audio.src = t.sound.file;
-            audio.currentTime = 0;
+function checkTimers(){
+    timers.forEach(t=>{
+        if(Date.now()>=t.end){
+            var audio=document.getElementById("alarmSound");
+            audio.src=t.sound.file;
+            audio.loop = true;
             audio.play();
 
             document.getElementById("doneText").textContent =
-                t.minutes + " minute timer done!";
-            document.getElementById("doneOverlay").style.display = "flex";
+                t.minutes+" minute timer done!";
+            document.getElementById("doneOverlay").style.display="flex";
 
             removeTimer(t.id);
         }
     });
-
     renderTimers();
 }
 
 /* ------------------ EVENTS ------------------ */
-document.getElementById("addTimerBtn").onclick = function() {
-    var val = Number(document.getElementById("minutesInput").value);
-    if (val > 0) {
-        addTimer(val);
-        document.getElementById("minutesInput").value = "";
-    } else {
-        alert("Enter a valid time");
-    }
+document.getElementById("addTimerBtn").onclick=function(){
+    var v=Number(document.getElementById("minutesInput").value);
+    if(v>0){ addTimer(v); this.blur(); }
 };
 
-document.getElementById("dismissDone").onclick = function() {
-    document.getElementById("doneOverlay").style.display = "none";
+document.getElementById("dismissDone").onclick=function(){
+    var audio=document.getElementById("alarmSound");
+    audio.pause();
+    audio.currentTime=0;
+    audio.loop = false;
+    document.getElementById("doneOverlay").style.display="none";
 };
 
 /* ------------------ INIT ------------------ */
 loadSounds();
 loadTimers();
 renderTimers();
-setInterval(checkTimers, 500);
+drawLaundry();
+
+setInterval(drawLaundry,10000);
+setInterval(checkTimers,500);
 </script>
 
 </body>
