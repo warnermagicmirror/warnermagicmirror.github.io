@@ -300,15 +300,16 @@ var l = "Lamoni";
 var ja = "Jason";
 var je = "Jedediah";
 var ma = "Marianne";
-var _ = "****";
+var b = "Boys";
+var _ = "No one";
 
 var schedule = {
-    mon: [mo, mo, mo, je + " & " + ma],
-    tue: [s, ma, ma, ja],
-    wed: [s, je, je, l],
-    thu: [s, mo, mo, ja],
-    fri: [s, je, ma, l],
-    sat: [ja, ja, l, l],
+    mon: [mo, mo, mo, mo],
+    tue: [l, ma, ma, je],
+    wed: [ja, s, s, l],
+    thu: [je, mo, mo, ja],
+    fri: [s, s, ma, ma],
+    sat: [b, l, ja, je],
     sun: [_, _, _, _]
 };
 
@@ -392,12 +393,13 @@ function drawLaundry() {
 
         until = slots[endIndex].label;
     }
-
+    var blah = onLaundry[onLaundry.length-1] === "s" ? "are" : "is";
     document.getElementById("onlaundry").textContent =
-        onLaundry + " is currently on laundry until " + until + ".";
+        onLaundry + " " + blah + " on laundry until " + until + ".";
 if (
     lastLaundryPerson !== null &&
-    lastLaundryPerson !== onLaundry
+    lastLaundryPerson !== onLaundry &&
+    onLaundry !== _
 ) {
 
     document
